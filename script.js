@@ -1,268 +1,284 @@
-const playlistSongs = document.getElementById("playlist-songs");
-const playButton = document.getElementById("play");
-const pauseButton = document.getElementById("pause");
-const nextButton = document.getElementById("next");
-const previousButton = document.getElementById("previous");
-const shuffleButton = document.getElementById("shuffle");
+let xp = 0;
+let health = 100;
+let gold = 50;
+let currentWeapon = 0;
+let fighting;
+let monsterHealth;
+let inventory = ["stick"];
 
-const allSongs = [
+const button1 = document.querySelector('#button1');
+const button2 = document.querySelector("#button2");
+const button3 = document.querySelector("#button3");
+const text = document.querySelector("#text");
+const xpText = document.querySelector("#xpText");
+const healthText = document.querySelector("#healthText");
+const goldText = document.querySelector("#goldText");
+const monsterStats = document.querySelector("#monsterStats");
+const monsterName = document.querySelector("#monsterName");
+const monsterHealthText =document.querySelector("#monsterHealth");
+const weapons = [
+  { name: 'stick', power: 5 },
+  { name: 'dagger', power: 30 },
+  { name: 'claw hammer', power: 50 },
+  { name: 'sword', power: 100 }
+];
+const monsters = [
   {
-    id: 0,
-    title: "Scratching The Surface",
-    artist: "Quincy Larson",
-    duration: "4:25",
-    src: "https://s3.amazonaws.com/org.freecodecamp.mp3-player-project/scratching-the-surface.mp3",
+    name: "slime",
+    level: 2,
+    health: 15
   },
   {
-    id: 1,
-    title: "Can't Stay Down",
-    artist: "Quincy Larson",
-    duration: "4:15",
-    src: "https://s3.amazonaws.com/org.freecodecamp.mp3-player-project/cant-stay-down.mp3",
+    name: "fanged beast",
+    level: 8,
+    health: 60
   },
   {
-    id: 2,
-    title: "Still Learning",
-    artist: "Quincy Larson",
-    duration: "3:51",
-    src: "https://s3.amazonaws.com/org.freecodecamp.mp3-player-project/still-learning.mp3",
-  },
-  {
-    id: 3,
-    title: "Cruising for a Musing",
-    artist: "Quincy Larson",
-    duration: "3:34",
-    src: "https://s3.amazonaws.com/org.freecodecamp.mp3-player-project/cruising-for-a-musing.mp3",
-  },
-  {
-    id: 4,
-    title: "Never Not Favored",
-    artist: "Quincy Larson",
-    duration: "3:35",
-    src: "https://s3.amazonaws.com/org.freecodecamp.mp3-player-project/never-not-favored.mp3",
-  },
-  {
-    id: 5,
-    title: "From the Ground Up",
-    artist: "Quincy Larson",
-    duration: "3:12",
-    src: "https://s3.amazonaws.com/org.freecodecamp.mp3-player-project/from-the-ground-up.mp3",
-  },
-  {
-    id: 6,
-    title: "Walking on Air",
-    artist: "Quincy Larson",
-    duration: "3:25",
-    src: "https://s3.amazonaws.com/org.freecodecamp.mp3-player-project/walking-on-air.mp3",
-  },
-  {
-    id: 7,
-    title: "Can't Stop Me. Can't Even Slow Me Down.",
-    artist: "Quincy Larson",
-    duration: "3:52",
-    src: "https://s3.amazonaws.com/org.freecodecamp.mp3-player-project/cant-stop-me-cant-even-slow-me-down.mp3",
-  },
-  {
-    id: 8,
-    title: "The Surest Way Out is Through",
-    artist: "Quincy Larson",
-    duration: "3:10",
-    src: "https://s3.amazonaws.com/org.freecodecamp.mp3-player-project/the-surest-way-out-is-through.mp3",
-  },
-  {
-    id: 9,
-    title: "Chasing That Feeling",
-    artist: "Quincy Larson",
-    duration: "2:43",
-    src: "https://s3.amazonaws.com/org.freecodecamp.mp3-player-project/chasing-that-feeling.mp3",
-  },
+    name: "dragon",
+    level: 20,
+    health: 300
+  }
+]
+const locations = [
+    {
+        name: "town square",
+        "button text": ["Go to store", "Go to cave", "Fight dragon"],
+        "button functions": [goStore, goCave, fightDragon],
+        text: "You are in the town square. You see a sign that says \"Store\"."
+    },
+    {
+        name: "store",
+        "button text": ["Buy 10 health (10 gold)", "Buy weapon (30 gold)", "Go to town square"],
+        "button functions": [buyHealth, buyWeapon, goTown],
+        text: "You enter the store."
+    },
+    {
+        name: "cave",
+        "button text": ["Fight slime", "Fight fanged beast", "Go to town square"],
+        "button functions": [fightSlime, fightBeast, goTown],
+        text: "You enter the cave. You see some monsters."
+    },
+    {
+        name: "fight",
+        "button text": ["Attack", "Dodge", "Run"],
+        "button functions": [attack, dodge, goTown],
+        text: "You are fighting a monster."
+    },
+    {
+        name: "kill monster",
+        "button text": ["Go to town square", "Go to town square", "Go to town square"],
+        "button functions": [goTown, goTown, easterEgg],
+        text: 'The monster screams "Arg!" as it dies. You gain experience points and find gold.'
+    },
+    {
+        name: "lose",
+        "button text": ["REPLAY?", "REPLAY?", "REPLAY?"],
+        "button functions": [restart, restart, restart],
+        text: "You die. ☠️"
+    },
+    { 
+        name: "win", 
+        "button text": ["REPLAY?", "REPLAY?", "REPLAY?"], 
+        "button functions": [restart, restart, restart], 
+        text: "You defeat the dragon! YOU WIN THE GAME! 🎉" 
+    },
+    {
+        name: "easter egg",
+        "button text": ["2", "8", "Go to town square?"],
+        "button functions": [pickTwo, pickEight, goTown],
+        text: "You find a secret game. Pick a number above. Ten numbers will be randomly chosen between 0 and 10. If the number you choose matches one of the random numbers, you win!"
+    }
 ];
 
-const audio = new Audio();
-let userData = {
-  songs: [...allSongs],
-  currentSong: null,
-  songCurrentTime: 0,
-};
+// initialize buttons
+button1.onclick = goStore;
+button2.onclick = goCave;
+button3.onclick = fightDragon;
 
-const playSong = (id) => {
-  const song = userData?.songs.find((song) => song.id === id);
-  audio.src = song.src;
-  audio.title = song.title;
+function update(location) {
+  monsterStats.style.display = "none";
+  button1.innerText = location["button text"][0];
+  button2.innerText = location["button text"][1];
+  button3.innerText = location["button text"][2];
+  button1.onclick = location["button functions"][0];
+  button2.onclick = location["button functions"][1];
+  button3.onclick = location["button functions"][2];
+  text.innerText = location.text;
+}
 
-  if (userData?.currentSong === null || userData?.currentSong.id !== song.id) {
-    audio.currentTime = 0;
+function goTown() {
+  update(locations[0]);
+}
+
+function goStore() {
+  update(locations[1]);
+}
+
+function goCave() {
+  update(locations[2]);
+}
+
+function buyHealth() {
+  if (gold >= 10) {
+    gold -= 10;
+    health += 10;
+    goldText.innerText = gold;
+    healthText.innerText = health;
   } else {
-    audio.currentTime = userData.songCurrentTime;
+    text.innerText = "You do not have enough gold to buy health.";
   }
-  userData.currentSong = song;
-  playButton.classList.add("playing");
+}
 
-  highlightCurrentSong();
-  setPlayerDisplay();
-  setPlayButtonAccessibleText();
-  audio.play();
-};
+function buyWeapon() {
+  if (currentWeapon < weapons.length - 1) {
+    if (gold >= 30) {
+      gold -= 30;
+      currentWeapon++;
+      goldText.innerText = gold;
+      let newWeapon = weapons[currentWeapon].name;
+      text.innerText = "You now have a " + newWeapon + ".";
+      inventory.push(newWeapon);
+      text.innerText += " In your inventory you have: " + inventory;
+    } else {
+      text.innerText = "You do not have enough gold to buy a weapon.";
+    }
+    }else {
+    text.innerText = "You already have the most powerful weapon!";
+    button2.innerText = "Sell weapon for 15 gold";
+    button2.onclick = sellWeapon;
+  }
+}
 
-const pauseSong = () => {
-  userData.songCurrentTime = audio.currentTime;
-  
-  playButton.classList.remove("playing");
-  audio.pause();
-};
-
-const playNextSong = () => {
-  if (userData?.currentSong === null) {
-    playSong(userData?.songs[0].id);
+function sellWeapon() {
+  if (inventory.length > 1) {
+    gold += 15;
+    goldText.innerText = gold;
+    let currentWeapon = inventory.shift();
+    text.innerText = "You sold a " + currentWeapon + ".";
+    text.innerText += " In your inventory you have: " + inventory;
   } else {
-    const currentSongIndex = getCurrentSongIndex();
-    const nextSong = userData?.songs[currentSongIndex + 1];
-
-    playSong(nextSong.id);
+    text.innerText = "Don't sell your only weapon!";
   }
-};
+}
 
-const playPreviousSong = () =>{
-   if (userData?.currentSong === null) return;
-   else {
-    const currentSongIndex = getCurrentSongIndex();
-    const previousSong = userData?.songs[currentSongIndex - 1];
+function fightSlime() {
+  fighting = 0;
+  goFight();
+}
 
-    playSong(previousSong.id);
-   }
-};
+function fightBeast() {
+  fighting = 1;
+  goFight();
+}
 
-const shuffle = () => {
-  userData?.songs.sort(() => Math.random() - 0.5);
-  userData.currentSong = null;
-  userData.songCurrentTime = 0;
+function fightDragon() {
+  fighting = 2;
+  goFight();
+}
 
-  renderSongs(userData?.songs);
-  pauseSong();
-  setPlayerDisplay();
-  setPlayButtonAccessibleText();
-};
+function goFight() {
+  update(locations[3]);
+  monsterHealth = monsters[fighting].health;
+  monsterStats.style.display = "block";
+  monsterName.innerText = monsters[fighting].name;
+  monsterHealthText.innerText = monsterHealth;
+}
 
-const deleteSong = (id) => {
-  if (userData?.currentSong?.id === id) {
-    userData.currentSong = null;
-    userData.songCurrentTime = 0;
-
-    pauseSong();
-    setPlayerDisplay();
-  }
-
-  userData.songs = userData?.songs.filter((song) => song.id !== id);
-  renderSongs(userData?.songs); 
-  highlightCurrentSong(); 
-  setPlayButtonAccessibleText(); 
-
-  if (userData.songs.length === 0) {
-    const resetButton = document.createElement("button");
-    const resetText = document.createTextNode("Reset Playlist");
-
-    resetButton.id = "reset";
-    resetButton.ariaLabel = "Reset playlist";
-    resetButton.appendChild(resetText);
-    playlistSongs.appendChild(resetButton);
-
-    resetButton.addEventListener("click", () => {
-      userData.songs = [...allSongs];
-
-      renderSongs(userData?.songs); 
-      setPlayButtonAccessibleText();
-      resetButton.remove();
-    });
-
-  }
-
-};
-
-const setPlayerDisplay = () => {
-  const playingSong = document.getElementById("player-song-title");
-  const songArtist = document.getElementById("player-song-artist");
-  const currentTitle = userData?.currentSong?.title;
-  const currentArtist = userData?.currentSong?.artist;
-
-  playingSong.textContent = currentTitle ? currentTitle : "";
-  songArtist.textContent = currentArtist ? currentArtist : "";
-};
-
-const highlightCurrentSong = () => {
-  const playlistSongElements = document.querySelectorAll(".playlist-song");
-  const songToHighlight = document.getElementById(
-    `song-${userData?.currentSong?.id}`
-  );
-
-  playlistSongElements.forEach((songEl) => {
-    songEl.removeAttribute("aria-current");
-  });
-
-  if (songToHighlight) songToHighlight.setAttribute("aria-current", "true");
-};
-
-const renderSongs = (array) => {
-  const songsHTML = array
-    .map((song)=> {
-      return `
-      <li id="song-${song.id}" class="playlist-song">
-      <button class="playlist-song-info" onclick="playSong(${song.id})">
-          <span class="playlist-song-title">${song.title}</span>
-          <span class="playlist-song-artist">${song.artist}</span>
-          <span class="playlist-song-duration">${song.duration}</span>
-      </button>
-      <button onclick="deleteSong(${song.id})" class="playlist-song-delete" aria-label="Delete ${song.title}">
-          <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="8" fill="#4d4d62"/>
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M5.32587 5.18571C5.7107 4.90301 6.28333 4.94814 6.60485 5.28651L8 6.75478L9.39515 5.28651C9.71667 4.94814 10.2893 4.90301 10.6741 5.18571C11.059 5.4684 11.1103 5.97188 10.7888 6.31026L9.1832 7.99999L10.7888 9.68974C11.1103 10.0281 11.059 10.5316 10.6741 10.8143C10.2893 11.097 9.71667 11.0519 9.39515 10.7135L8 9.24521L6.60485 10.7135C6.28333 11.0519 5.7107 11.097 5.32587 10.8143C4.94102 10.5316 4.88969 10.0281 5.21121 9.68974L6.8168 7.99999L5.21122 6.31026C4.8897 5.97188 4.94102 5.4684 5.32587 5.18571Z" fill="white"/></svg>
-        </button>
-      </li>
-      `;
-    })
-    .join("");
-
-  playlistSongs.innerHTML = songsHTML;
-};
-
-const setPlayButtonAccessibleText = () => {
-  const song = userData?.currentSong || userData?.songs[0];
-
-  playButton.setAttribute(
-    "aria-label",
-    song?.title ? `Play ${song.title}` : "Play"
-  );
-};
-
-const getCurrentSongIndex = () => userData?.songs.indexOf(userData.currentSong);
-
-playButton.addEventListener("click", () => {
-    if (userData?.currentSong === null) {
-    playSong(userData?.songs[0].id);
+function attack() {
+  text.innerText = "The " + monsters[fighting].name + " attacks.";
+  text.innerText += " You attack it with your " + weapons[currentWeapon].name + ".";
+  health -= getMonsterAttackValue(monsters[fighting].level);
+  if (isMonsterHit()) {
+    monsterHealth -= weapons[currentWeapon].power + Math.floor(Math.random() * xp) + 1;    
   } else {
-    playSong(userData?.currentSong.id);
+    text.innerText += " You miss.";
   }
-});
+  healthText.innerText = health;
+  monsterHealthText.innerText = monsterHealth;
+  if (health <= 0) {
+    lose();
+  } else if (monsterHealth <= 0) {
+    fighting === 2 ? winGame() : defeatMonster();
+  }
+  if (Math.random() <= .1 && inventory.length !== 1) {
+    text.innerText += " Your " + inventory.pop() + " breaks.";
+    currentWeapon--;
+  }
+}
 
-pauseButton.addEventListener("click",  pauseSong);
+function getMonsterAttackValue(level) {
+  const hit = (level * 5) - (Math.floor(Math.random() * xp));
+  console.log(hit);
+  return hit > 0 ? hit : 0;
+}
 
-nextButton.addEventListener("click", playNextSong);
+function isMonsterHit() {
+  return Math.random() > .2 || health < 20;
+}
 
-previousButton.addEventListener("click", playPreviousSong);
+function dodge() {
+  text.innerText = "You dodge the attack from the " + monsters[fighting].name;
+}
 
-shuffleButton.addEventListener("click", shuffle);
-audio.addEventListener("ended", () => {
-  const currentSongIndex = getCurrentSongIndex();
-  const nextSongExists = userData?.songs[currentSongIndex + 1] !== undefined;
+function defeatMonster() {
+  gold += Math.floor(monsters[fighting].level * 6.7);
+  xp += monsters[fighting].level;
+  goldText.innerText = gold;
+  xpText.innerText = xp;
+  update(locations[4]);
+}
 
-  if (nextSongExists) {
-    playNextSong();
+function lose() {
+  update(locations[5]);
+}
+
+function winGame() {
+  update(locations[6]);
+}
+
+function restart() {
+  xp = 0;
+  health = 100;
+  gold = 50;
+  currentWeapon = 0;
+  inventory = ["stick"];
+  goldText.innerText = gold;
+  healthText.innerText = health;
+  xpText.innerText = xp;
+  goTown();
+}
+
+function easterEgg() {
+  update(locations[7]);
+}
+
+function pickTwo() {
+  pick(2);
+}
+
+function pickEight() {
+  pick(8);
+}
+
+function pick(guess) {
+  let numbers = [];
+  while (numbers.length < 10) {
+    numbers.push(Math.floor(Math.random() * 11));
+  }
+  text.innerText = "You picked " + guess + ". Here are the random numbers:\n";
+  for (let i = 0; i < 10; i++) {
+    text.innerText += numbers[i] + "\n";
+  }
+  if (numbers.indexOf(guess) !== -1) {
+    text.innerText += "Right! You win 20 gold!";
+    gold += 20;
+    goldText.innerText = gold;
   } else {
-    userData.currentSong = null;
-    userData.songCurrentTime = 0;
-    pauseSong();
-    setPlayerDisplay();
-    highlightCurrentSong();
-    setPlayButtonAccessibleText();
+    text.innerText += "Wrong! You lose 10 health!";
+    health -= 10;
+    healthText.innerText = health;
+    if (health <= 0) {
+      lose();
+    }
   }
-});
-
-renderSongs(userData?.songs);
+}
